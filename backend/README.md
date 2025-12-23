@@ -55,7 +55,7 @@ OPENROUTER_API_KEY=sk-or-v1-13cb55af9664708f4b141a49287092c3c50be49ba8097c719960
 ### Step 4: Run Backend Server
 
 ```bash
-uvicorn main:app --reload
+python -m uvicorn main:app --reload
 ```
 
 Visit:  

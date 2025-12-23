@@ -1,16 +1,18 @@
 import { useRef } from "react";
 
-export default function FileUpload({ files, setFiles, onFileUpload }) {
+export default function FileUpload({ files, setFiles }) {
   const inputRef = useRef(null);
 
-  const handleFiles = (selected) => {
-    const fileList = Array.from(selected);
-    setFiles([...files, ...fileList]);
-    if (onFileUpload) {
-    onFileUpload(fileList); // ✅ This triggers chat message creation
-}
+  const handleFiles = (selectedFiles) => {
+    const freshList = Array.from(selectedFiles);
 
+    // Log file directly here
+    console.log("FRESH FILE OBJECT:", freshList);
+
+    // Always use the fresh file list
+    setFiles(freshList);
   };
+
 
   const handleDrop = (e) => {
     e.preventDefault();
@@ -18,9 +20,7 @@ export default function FileUpload({ files, setFiles, onFileUpload }) {
   };
 
   const removeFile = (index) => {
-    const updated = [...files];
-    updated.splice(index, 1);
-    setFiles(updated);
+    setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -46,7 +46,10 @@ export default function FileUpload({ files, setFiles, onFileUpload }) {
               <span className="truncate">{file.name}</span>
               <button
                 className="text-red-500 text-xs ml-2 hover:text-red-700"
-                onClick={() => removeFile(idx)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeFile(idx);
+                }}
               >
                 ✕
               </button>

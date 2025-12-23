@@ -7,7 +7,8 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 from loaders.load_documents import load_documents
 from text_splitter import chunk_documents
 from sentence_transformers import SentenceTransformer
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
+
 
 
 def get_huggingface_embedder(model_name="all-MiniLM-L6-v2"):

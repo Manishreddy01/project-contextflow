@@ -7,7 +7,8 @@ Installation Guide
 
 2. Setting Up the Backend (FastAPI + LangChain + Qdrant)
     cd backend
-    python -m venv venv             # Create virtual environment
+    /opt/homebrew/bin/python3.11 -m venv venv        
+    # Create virtual environment
     # Windows:
     venv\Scripts\activate
     # macOS/Linux:
@@ -20,7 +21,7 @@ Installation Guide
             TAVILY_API_KEY=your_tavily_key (optional)
             QDRANT_HOST=http://localhost:6333
     Run the FastAPI Server
-    uvicorn main:app --reload
+    python -m uvicorn main:app --reload
 
 3. Setting Up the Frontend (React + Tailwind)
     (only if you're starting from scratch)

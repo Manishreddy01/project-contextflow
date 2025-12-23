@@ -1,25 +1,52 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";  // ⬅️ add useEffect
 import ChatFeed from "./ChatFeed";
 import ChatInput from "./ChatInput";
 import FileUpload from "./FileUpload";
+import { v4 as uuidv4 } from "uuid";
 
-// Set backend URL via .env or fallback to localhost
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
 
 export default function ChatWindow({ messages, setMessages, conversationId }) {
-  const [files, setFiles] = useState([]); // store uploaded files temporarily
+  const [files, setFiles] = useState([]);
+
+  // 🔹 Stable conversation ID for this component
+  const [convId, setConvId] = useState(() => {
+    // Priority: prop → localStorage → new UUID
+    if (conversationId) {
+      localStorage.setItem("conversationId", conversationId);
+      return conversationId;
+    }
+
+    const stored = localStorage.getItem("conversationId");
+    if (stored) return stored;
+
+    const fresh = uuidv4();
+    localStorage.setItem("conversationId", fresh);
+    return fresh;
+  });
+
+  // 🔹 If parent ever passes a new conversationId, sync it
+  useEffect(() => {
+    if (conversationId && conversationId !== convId) {
+      setConvId(conversationId);
+      localStorage.setItem("conversationId", conversationId);
+    }
+  }, [conversationId, convId]);
 
   const handleSend = async (inputText) => {
     if (!inputText.trim() && files.length === 0) return;
 
-    const newMessages = [];
+    // --------------------------------------------------
+    // Use stable convId from state (no more local let convId logic)
+    // --------------------------------------------------
+    const activeConvId = convId;
 
-    // Add text message (if any)
+    // Add user messages to UI
+    const newMessages = [];
     if (inputText.trim()) {
       newMessages.push({ role: "user", content: inputText });
     }
 
-    // Add uploaded file names
     if (files.length > 0) {
       const fileMessages = files.map((file) => ({
         role: "user",
@@ -28,34 +55,52 @@ export default function ChatWindow({ messages, setMessages, conversationId }) {
       newMessages.push(...fileMessages);
     }
 
-    // Show user message(s) in UI
     setMessages((prev) => [...prev, ...newMessages]);
 
-    // Prepare upload form
-    const formData = new FormData();
-    formData.append("conversationId", conversationId);
-    if (inputText.trim()) formData.append("text", inputText);
-    files.forEach((file) => formData.append("file", file));
+    console.log("QUERY PAYLOAD:", {
+      question: inputText,
+      conversationId: activeConvId,
+      files,
+    });
 
-    // Upload files + text to backend
-    try {
-      await fetch(`${BACKEND_URL}/upload/`, {
-        method: "POST",
-        body: formData,
+    // --------------------------------------------------
+    // Upload document(s) ONLY if there are files
+    // --------------------------------------------------
+    if (files.length > 0) {
+      const formData = new FormData();
+      formData.append("conversationId", activeConvId);
+
+      files.forEach((file) => {
+        formData.append("files", file); // MUST use same key used in backend
       });
-    } catch (error) {
-      console.error("Upload failed:", error);
+
+      formData.forEach((v, k) => console.log("FORMDATA:", k, v));
+
+      try {
+        await fetch(`${BACKEND_URL}/upload/`, {
+          method: "POST",
+          body: formData,
+        });
+      } catch (err) {
+        console.error("Upload failed:", err);
+      }
     }
 
-    // Query backend for response
+    // --------------------------------------------------
+    // Query backend
+    // --------------------------------------------------
     try {
       const res = await fetch(`${BACKEND_URL}/query/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: inputText, conversationId }),
+        body: JSON.stringify({
+          question: inputText,
+          conversationId: activeConvId,
+        }),
       });
 
       const data = await res.json();
+      console.log("QUERY RESPONSE:", data);
 
       setMessages((prev) => [
         ...prev,
@@ -71,8 +116,11 @@ export default function ChatWindow({ messages, setMessages, conversationId }) {
       console.error("Query failed:", err);
     }
 
-    setFiles([]); // reset file input after send
+    setFiles([]);
   };
+
+  console.log("DEBUG FILE UPLOAD:", files);
+  console.log("DEBUG conversationId used (frontend):", convId);
 
   return (
     <div className="flex flex-col h-full">

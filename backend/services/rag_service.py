@@ -23,7 +23,12 @@ def run_rag_pipeline(question: str, chat_history: List[dict], conversation_id: s
     """
     try:
         # generate_answer accepts only (query: str, k: int = 3)
-        result = generate_answer(query=question)
+        result = generate_answer(
+            query=question,
+            chat_history=chat_history,
+            conversation_id=conversation_id
+        )
+
 
         # Be defensive in case fields are missing
         answer = result.get("answer") or result.get("result") or ""
