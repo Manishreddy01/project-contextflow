@@ -3,13 +3,14 @@ from pathlib import Path
 
 # Add project root to sys.path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
-
+from rag.config import EMBEDDING_MODEL_NAME
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Qdrant
 from qdrant_client import QdrantClient
 
+
 def get_retriever(query: str, k: int = 3):
-    embedder = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    embedder = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL_NAME)
 
     client = QdrantClient(url="http://localhost:6333")
     vectorstore = Qdrant(

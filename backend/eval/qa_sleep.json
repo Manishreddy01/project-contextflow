@@ -1,0 +1,30 @@
+[
+  {
+    "id": "sleep_1",
+    "conversation_id": "eval-sleep-1",
+    "question": "What are the benefits of good sleep?",
+    "expected_source": "private_info.txt",
+    "must_contain": ["memory", "stress", "immune"]
+  },
+  {
+    "id": "sleep_2",
+    "conversation_id": "eval-sleep-1",
+    "question": "What factors negatively affect sleep quality?",
+    "expected_source": "private_info.txt",
+    "must_contain": ["screen time", "irregular sleep", "caffeine"]
+  },
+  {
+    "id": "sleep_3",
+    "conversation_id": "eval-sleep-1",
+    "question": "What are the stages of sleep mentioned in the document?",
+    "expected_source": "private_info.txt",
+    "must_contain": ["light sleep", "deep sleep", "REM"]
+  },
+  {
+    "id": "sleep_4",
+    "conversation_id": "eval-sleep-1",
+    "question": "How can I improve my sleep environment?",
+    "expected_source": "private_info.txt",
+    "must_contain": ["environment", "screen", "stress"]
+  }
+]

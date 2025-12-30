@@ -8,10 +8,10 @@ from loaders.load_documents import load_documents
 from text_splitter import chunk_documents
 from sentence_transformers import SentenceTransformer
 from langchain_community.embeddings import HuggingFaceEmbeddings
+from rag.config import EMBEDDING_MODEL_NAME
 
 
-
-def get_huggingface_embedder(model_name="all-MiniLM-L6-v2"):
+def get_huggingface_embedder(model_name=EMBEDDING_MODEL_NAME):
     print(f"🚀 Loading HuggingFace model: {model_name}")
     model = HuggingFaceEmbeddings(model_name=model_name)
     return model

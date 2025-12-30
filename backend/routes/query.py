@@ -1,5 +1,3 @@
-# backend/routes/query.py
-
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Literal
@@ -9,19 +7,19 @@ import os
 from langchain_community.chat_models import ChatOpenAI
 
 from services.rag_service import run_rag_pipeline
-from services.web_search import search_web_with_tavily
+from services.web_search import search_web_with_tavily  # see web_search.py below
 
 router = APIRouter()
 
-# Confidence threshold for deciding if RAG is "good enough"
-CONFIDENCE_THRESHOLD = 0.85
+# Confidence threshold for accepting RAG answers
+CONFIDENCE_THRESHOLD = 0.7
 
 openrouter_key = os.getenv("OPENROUTER_API_KEY")
 if not openrouter_key:
-    raise RuntimeError("OPENROUTER_API_KEY not set")
+    raise ValueError("OPENROUTER_API_KEY not set")
 
 
-# ---------- Schemas ----------
+# ---------- Models ----------
 
 class QueryRequest(BaseModel):
     question: str
@@ -35,18 +33,33 @@ class QueryResponse(BaseModel):
     confidence: float
 
 
-# ---------- Helpers ----------
+# ---------- Heuristics: conversational vs factual ----------
 
 def is_conversational_message(text: str) -> bool:
     """
-    Detects greetings / small talk / emotional check-ins that should be
-    answered conversationally by the LLM instead of web search.
+    Detects greetings / small talk / emotional check-ins / personal preferences
+    that should be answered conversationally by the LLM instead of web search.
     """
+    if not text:
+        return True
+
     t = text.lower().strip()
     words = t.split()
 
-    if not t:
-        return True
+    # 🔹 0) Guard: explicit fact-style question prefixes → NOT conversational
+    # (except for "how are you" style)
+    question_prefixes = ("who ", "what ", "why ", "when ", "where ", "which ", "how ")
+    if t.startswith(question_prefixes):
+        # allow "how are you" variants to still count as small talk
+        small_talk_phrases = [
+            "how are you",
+            "how are u",
+            "how's it going",
+            "hows it going",
+            "how are you doing",
+        ]
+        if not any(p in t for p in small_talk_phrases):
+            return False
 
     # 1) Classic greetings / small talk
     greeting_keywords = [
@@ -71,25 +84,30 @@ def is_conversational_message(text: str) -> bool:
     ]
     if first_person and any(kw in t for kw in emotion_keywords):
         return True
+
+    # 3) Personal preference / casual opinions
     preference_keywords = [
         "like", "love", "enjoy", "hate", "don't like", "do not like",
         "prefer", "i'm a fan of", "im a fan of",
     ]
     if first_person and any(kw in t for kw in preference_keywords):
-        # e.g. "but i like drinking coffee", "i love coffee"
+        # e.g. "but i like drinking coffee", "i love staying up late"
         return True
 
-    # 3) Very short, no question mark → often chit-chat like "hey there"
+    # 4) Very short, no question mark → often chit-chat like "hey there"
     if len(words) <= 4 and "?" not in t:
         return True
 
     return False
 
 
+
+# ---------- Small-talk LLM path ----------
+
 def generate_small_talk_reply(question: str) -> dict:
     """
-    Use the LLM directly to respond conversationally,
-    without RAG or web search.
+    Friendly, conversational reply that does NOT use web search.
+    This is used when RAG is weak but the message is clearly conversational.
     """
     llm = ChatOpenAI(
         temperature=0.7,
@@ -114,19 +132,19 @@ User: {question}
 
     return {
         "answer": answer_text,
-        "sources": [],          # no external sources; just a chatty reply
-        "type": "document",     # fits QueryResponse Literal["document", "web"]
+        "sources": [],
+        "type": "document",  # "chat" doesn't exist in the response model, so "document" is closest
         "confidence": 0.9,
     }
 
 
-# ---------- Route ----------
+# ---------- Main route ----------
 
 @router.post("/", response_model=QueryResponse)
 async def handle_query(payload: QueryRequest):
     start_time = time.time()
 
-    question = payload.question
+    question = (payload.question or "").strip()
     conversation_id = payload.conversationId
     print("QUERY conversationId:", conversation_id)
 
@@ -136,25 +154,30 @@ async def handle_query(payload: QueryRequest):
     try:
         chat_history = []  # reserved for future use
 
-        # 1) Run RAG pipeline
+        # ---- 1) Run RAG pipeline first ----
         rag_result = run_rag_pipeline(question, chat_history, conversation_id)
+        rag_conf = rag_result.get("confidence", 0.0)
 
-        # 2) If RAG is weak, decide between conversational reply vs web search
-        if rag_result.get("confidence", 0.0) < CONFIDENCE_THRESHOLD:
-            if is_conversational_message(question):
-                print("Low RAG confidence, conversational message detected → using LLM chat reply.")
-                reply = generate_small_talk_reply(question)
-                print(f"[Query] Processed in {round(time.time() - start_time, 2)}s")
-                return reply
-
-            print("RAG confidence too low. Switching to web search fallback.")
-            web_result = search_web_with_tavily(question)
+        # If RAG is confident enough, just return that
+        if rag_conf >= CONFIDENCE_THRESHOLD:
+            print(f"[Query] RAG accepted (conf={rag_conf}).")
             print(f"[Query] Processed in {round(time.time() - start_time, 2)}s")
-            return web_result
+            return rag_result
 
-        # 3) RAG was confident enough → return document answer
+        # ---- 2) RAG is weak: decide chat vs web ----
+        print(f"[Query] RAG weak (conf={rag_conf}). Checking conversational heuristics...")
+
+        if is_conversational_message(question):
+            print("[Query] Detected conversational / small-talk message → LLM chat mode.")
+            small_talk = generate_small_talk_reply(question)
+            print(f"[Query] Processed in {round(time.time() - start_time, 2)}s")
+            return small_talk
+
+        # ---- 3) Not conversational → web search fallback ----
+        print("RAG confidence too low & not conversational. Switching to web search fallback.")
+        web_result = search_web_with_tavily(question)
         print(f"[Query] Processed in {round(time.time() - start_time, 2)}s")
-        return rag_result
+        return web_result
 
     except Exception as e:
         print(f"[ERROR] Exception in /query: {e}")

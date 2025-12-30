@@ -8,7 +8,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams
 from langchain_community.vectorstores import Qdrant
 from langchain_community.embeddings import HuggingFaceEmbeddings
-
+from rag.config import EMBEDDING_MODEL_NAME
 from embeddings.text_splitter import chunk_documents
 from loaders.load_documents import load_documents
 
@@ -26,9 +26,10 @@ def create_collection(client, collection_name: str = "rag_collection"):
 
 
 def store_in_qdrant(chunks, collection_name: str = "rag_collection", metadata=None):
-    embedder = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    embedder = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL_NAME)
     client = get_qdrant_client()
     create_collection(client, collection_name)
+    print(f"[Embeddings] Using model: {EMBEDDING_MODEL_NAME}")
 
     # Add metadata
     if metadata:

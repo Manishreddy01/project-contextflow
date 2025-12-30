@@ -9,17 +9,34 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema import Document
 
 
-def chunk_documents(documents: list[Document], chunk_size=100, chunk_overlap=20, metadata: dict = None):
+def chunk_documents(
+    documents: list[Document],
+    chunk_size: int = 800,
+    chunk_overlap: int = 200,
+    metadata: dict = None,
+):
+    """
+    Split documents into overlapping chunks.
+
+    Defaults:
+    - chunk_size=800: larger chunks keep related sentences together.
+    - chunk_overlap=200: overlap avoids cutting important info between chunks.
+    """
+
     if metadata:
         for doc in documents:
             doc.metadata.update(metadata)
 
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap
+        chunk_overlap=chunk_overlap,
     )
+
     chunks = splitter.split_documents(documents)
-    print(f"🧩 Chunked into {len(chunks)} segments.")
+    print(
+        f"🧩 Chunked into {len(chunks)} segments "
+        f"(chunk_size={chunk_size}, overlap={chunk_overlap})"
+    )
     return chunks
 
 
