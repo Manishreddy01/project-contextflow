@@ -62,7 +62,7 @@ npm install
 ⚠️ Make sure you’re inside the frontend/ folder before running any commands.
 
 3. Run the development server
-
+npm install @react-oauth/google
 npm run dev
 
 Frontend will be available at:

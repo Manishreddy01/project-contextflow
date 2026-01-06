@@ -4,58 +4,43 @@ export default function FileUpload({ files, setFiles }) {
   const inputRef = useRef(null);
 
   const handleFiles = (selectedFiles) => {
-    const freshList = Array.from(selectedFiles);
-
-    // Log file directly here
-    console.log("FRESH FILE OBJECT:", freshList);
-
-    // Always use the fresh file list
+    const freshList = Array.from(selectedFiles || []);
     setFiles(freshList);
   };
 
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    handleFiles(e.dataTransfer.files);
-  };
-
-  const removeFile = (index) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
-  };
-
   return (
-    <div
-      className="border border-dashed border-gray-300 p-3 mb-3 rounded-xl text-gray-500 bg-gray-50 hover:border-blue-400 text-sm cursor-pointer"
-      onDrop={handleDrop}
-      onDragOver={(e) => e.preventDefault()}
-      onClick={() => inputRef.current.click()}
-    >
-      📂 Drag & drop files here or <span className="underline">browse</span>
+    <div className="mt-2">
+      {/* hidden input, triggered by + button in ChatInput */}
       <input
+        id="file-input-hidden"
         type="file"
-        hidden
         multiple
         ref={inputRef}
+        className="hidden"
         onChange={(e) => handleFiles(e.target.files)}
       />
 
+      {/* show selected files as chips */}
       {files.length > 0 && (
-        <ul className="mt-2 text-xs text-left text-gray-700 space-y-1">
+        <div className="flex flex-wrap gap-2 text-xs text-gray-700">
           {files.map((file, idx) => (
-            <li key={idx} className="flex justify-between items-center">
-              <span className="truncate">{file.name}</span>
+            <div
+              key={idx}
+              className="flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 border border-gray-200"
+            >
+              <span className="truncate max-w-[140px]">{file.name}</span>
               <button
-                className="text-red-500 text-xs ml-2 hover:text-red-700"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  removeFile(idx);
-                }}
+                type="button"
+                className="text-gray-500 hover:text-red-500 text-[11px]"
+                onClick={() =>
+                  setFiles((prev) => prev.filter((_, i) => i !== idx))
+                }
               >
                 ✕
               </button>
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );

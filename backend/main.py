@@ -4,7 +4,8 @@ from fastapi import FastAPI
 from routes.upload import router as uploadRouter
 from routes.query import router as queryRouter
 from fastapi.middleware.cors import CORSMiddleware
-
+from routes import conversations
+from routes.auth import router as auth_router
 
 app = FastAPI()
 # CORS setup — update this with actual frontend URL if known
@@ -14,7 +15,7 @@ origins = [
 ]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],  # You can restrict to ["POST"] if needed
     allow_headers=["*"],
@@ -22,6 +23,8 @@ app.add_middleware(
 
 app.include_router(uploadRouter, prefix="/upload")
 app.include_router(queryRouter, prefix="/query")
+app.include_router(auth_router)
+
 
 @app.get("/health")
 async def health_check():

@@ -1,17 +1,16 @@
-import { useState, useEffect } from "react";  // ⬅️ add useEffect
+import { useState, useEffect } from "react";
 import ChatFeed from "./ChatFeed";
 import ChatInput from "./ChatInput";
-import FileUpload from "./FileUpload";
 import { v4 as uuidv4 } from "uuid";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
 
 export default function ChatWindow({ messages, setMessages, conversationId }) {
   const [files, setFiles] = useState([]);
+  const [isThinking, setIsThinking] = useState(false);
 
   // 🔹 Stable conversation ID for this component
   const [convId, setConvId] = useState(() => {
-    // Priority: prop → localStorage → new UUID
     if (conversationId) {
       localStorage.setItem("conversationId", conversationId);
       return conversationId;
@@ -33,20 +32,22 @@ export default function ChatWindow({ messages, setMessages, conversationId }) {
     }
   }, [conversationId, convId]);
 
+  // 🔹 Called by ChatInput when user picks files via "+"
+  const handleFilesSelected = (selectedFiles) => {
+    const arr = Array.from(selectedFiles || []);
+    setFiles(arr);
+  };
+
   const handleSend = async (inputText) => {
     if (!inputText.trim() && files.length === 0) return;
 
-    // --------------------------------------------------
-    // Use stable convId from state (no more local let convId logic)
-    // --------------------------------------------------
     const activeConvId = convId;
 
-    // Add user messages to UI
+    // Add user message(s) to UI
     const newMessages = [];
     if (inputText.trim()) {
       newMessages.push({ role: "user", content: inputText });
     }
-
     if (files.length > 0) {
       const fileMessages = files.map((file) => ({
         role: "user",
@@ -55,7 +56,17 @@ export default function ChatWindow({ messages, setMessages, conversationId }) {
       newMessages.push(...fileMessages);
     }
 
-    setMessages((prev) => [...prev, ...newMessages]);
+    // Add "Thinking..." placeholder
+    const thinkingMessage = {
+      role: "assistant",
+      content: "Thinking...",
+      type: "chat",
+      confidence: 0,
+      isThinking: true,
+    };
+
+    setMessages((prev) => [...prev, ...newMessages, thinkingMessage]);
+    setIsThinking(true);
 
     console.log("QUERY PAYLOAD:", {
       question: inputText,
@@ -63,18 +74,11 @@ export default function ChatWindow({ messages, setMessages, conversationId }) {
       files,
     });
 
-    // --------------------------------------------------
-    // Upload document(s) ONLY if there are files
-    // --------------------------------------------------
+    // ---------- Upload docs if any ----------
     if (files.length > 0) {
       const formData = new FormData();
       formData.append("conversationId", activeConvId);
-
-      files.forEach((file) => {
-        formData.append("files", file); // MUST use same key used in backend
-      });
-
-      formData.forEach((v, k) => console.log("FORMDATA:", k, v));
+      files.forEach((file) => formData.append("files", file));
 
       try {
         await fetch(`${BACKEND_URL}/upload/`, {
@@ -86,9 +90,7 @@ export default function ChatWindow({ messages, setMessages, conversationId }) {
       }
     }
 
-    // --------------------------------------------------
-    // Query backend
-    // --------------------------------------------------
+    // ---------- Query backend ----------
     try {
       const res = await fetch(`${BACKEND_URL}/query/`, {
         method: "POST",
@@ -102,24 +104,31 @@ export default function ChatWindow({ messages, setMessages, conversationId }) {
       const data = await res.json();
       console.log("QUERY RESPONSE:", data);
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: data.answer,
-          sources: data.sources,
-          type: data.type,
-          confidence: data.confidence,
-        },
-      ]);
+      setMessages((prev) => {
+        // Remove any existing thinking messages
+        const withoutThinking = prev.filter((m) => !m.isThinking);
+        return [
+          ...withoutThinking,
+          {
+            role: "assistant",
+            content: data.answer,
+            sources: data.sources,
+            type: data.type,
+            confidence: data.confidence,
+          },
+        ];
+      });
     } catch (err) {
       console.error("Query failed:", err);
+      // Remove thinking bubble even on error
+      setMessages((prev) => prev.filter((m) => !m.isThinking));
+    } finally {
+      setIsThinking(false);
+      setFiles([]);
     }
-
-    setFiles([]);
   };
 
-  console.log("DEBUG FILE UPLOAD:", files);
+  console.log("DEBUG FILES:", files);
   console.log("DEBUG conversationId used (frontend):", convId);
 
   return (
@@ -128,9 +137,12 @@ export default function ChatWindow({ messages, setMessages, conversationId }) {
         <ChatFeed messages={messages} />
       </div>
 
-      <div className="mt-4 p-4 bg-white space-y-4">
-        <ChatInput onSend={handleSend} />
-        <FileUpload files={files} setFiles={setFiles} />
+      <div className="mt-4 p-4 bg-white space-y-4 border-t border-gray-100">
+        <ChatInput
+          onSend={handleSend}
+          onFilesSelected={handleFilesSelected}
+          isThinking={isThinking}
+        />
       </div>
     </div>
   );
