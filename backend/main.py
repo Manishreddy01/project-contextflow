@@ -1,3 +1,4 @@
+import os
 from dotenv import load_dotenv
 load_dotenv()
 from fastapi import FastAPI
@@ -9,15 +10,23 @@ from routes.auth import router as auth_router
 
 app = FastAPI()
 # CORS setup — update this with actual frontend URL if known
-origins = [
-    "http://localhost:5173",  # ✅ Vite dev server
-    "http://127.0.0.1:5173",  # ✅ optional alternative for safety
+base_origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
 ]
+
+# Optional: extra origin from env (for deployed frontend)
+extra_origin = os.getenv("FRONTEND_ORIGIN")
+
+allow_origins = base_origins.copy()
+if extra_origin and extra_origin not in allow_origins:
+    allow_origins.append(extra_origin)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allow_origins,
     allow_credentials=True,
-    allow_methods=["*"],  # You can restrict to ["POST"] if needed
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 

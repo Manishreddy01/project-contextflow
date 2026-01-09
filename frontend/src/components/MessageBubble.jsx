@@ -1,3 +1,4 @@
+// src/components/MessageBubble.jsx
 export default function MessageBubble({
   role,
   content,
@@ -11,39 +12,43 @@ export default function MessageBubble({
   const modeLabel = isThinking
     ? "Thinking..."
     : type === "document"
-    ? "Doc answer"
+    ? "DOC ANSWER"
     : type === "web"
-    ? "Web answer"
+    ? "WEB ANSWER"
     : type === "chat"
-    ? "Chat mode"
+    ? "CHAT MODE"
     : "";
 
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
       <div
-        className={`max-w-xl px-4 py-3 rounded-2xl shadow-sm whitespace-pre-wrap text-sm md:text-base ${
+        className={`max-w-xl px-4 py-3 rounded-2xl shadow-md whitespace-pre-wrap text-sm md:text-base border border-transparent ${
           isUser
-            ? "bg-blue-600 text-white rounded-br-none"
-            : "bg-gray-100 text-gray-900 rounded-bl-none"
+            ? "bg-indigo-500 text-white rounded-br-none"
+            : "bg-slate-900/90 text-slate-50 rounded-bl-none border-slate-700/60"
         }`}
       >
+        {/* Header: Assistant + mode */}
         {!isUser && modeLabel && (
-          <div className="text-[11px] text-gray-500 mb-1 flex justify-between">
-            <span>Assistant</span>
-            <span className="italic">{modeLabel}</span>
+          <div className="text-[11px] text-slate-200/80 mb-1 flex items-center justify-between gap-2">
+            <span className="font-semibold">Assistant</span>
+            <span className="px-2 py-0.5 rounded-full bg-slate-800 text-[10px] uppercase tracking-wide">
+              {modeLabel}
+            </span>
           </div>
         )}
 
         <p>{content}</p>
 
+        {/* Sources */}
         {!isUser && !isThinking && sources?.length > 0 && (
-          <div className="mt-2 text-[11px] text-gray-500 border-t pt-2 space-y-1">
+          <div className="mt-2 text-[11px] text-slate-200/80 border-t border-slate-700 pt-2 space-y-1">
             <div className="flex flex-wrap gap-1">
               <span className="font-semibold mr-1">Sources:</span>
               {sources.map((src, i) => (
                 <span
                   key={`${src}-${i}`}
-                  className="px-2 py-0.5 rounded-full bg-gray-200 text-gray-700"
+                  className="px-2 py-0.5 rounded-full bg-slate-800 text-slate-100"
                 >
                   {src}
                 </span>

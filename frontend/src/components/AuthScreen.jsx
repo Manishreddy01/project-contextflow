@@ -2,127 +2,115 @@
 import { useEffect, useRef, useState } from "react";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 export default function AuthScreen({ onAuthSuccess }) {
   const buttonRef = useRef(null);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!GOOGLE_CLIENT_ID) {
-      setError("Missing VITE_GOOGLE_CLIENT_ID in .env");
-      return;
-    }
+    const scriptId = "google-identity-services";
 
-    // Ensure the Google script exists
-    const scriptId = "google-identity-script";
-    let script = document.getElementById(scriptId);
+    const handleCredentialResponse = (response) => {
+      setError(null);
+
+      fetch(`${BACKEND_URL}/auth/google`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credential: response.credential }),
+      })
+        .then(async (res) => {
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.detail || "Authentication failed");
+          }
+          return res.json();
+        })
+        .then((data) => {
+          if (typeof onAuthSuccess === "function") {
+            onAuthSuccess(data);
+          }
+        })
+        .catch((err) => {
+          console.error("Auth error:", err);
+          setError(err.message || "Authentication failed");
+        });
+    };
 
     const initGoogle = () => {
       if (!window.google || !buttonRef.current) return;
 
-      // Clear any previous button contents on remount
-      buttonRef.current.innerHTML = "";
+      try {
+        window.google.accounts.id.initialize({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+          callback: handleCredentialResponse,
+        });
 
-      window.google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: handleCredentialResponse,
-      });
-
-      window.google.accounts.id.renderButton(buttonRef.current, {
-        theme: "outline",
-        size: "large",
-        width: 320,
-      });
-
-      // Optional: auto-select last account
-      window.google.accounts.id.prompt();
+        window.google.accounts.id.renderButton(buttonRef.current, {
+          theme: "outline",
+          size: "large",
+          width: 320,
+          shape: "pill",
+          text: "continue_with",
+        });
+      } catch (e) {
+        console.error("GSI init error", e);
+        setError("Authentication unavailable.");
+      }
     };
 
-    const handleScriptLoad = () => {
-      initGoogle();
-    };
-
-    if (!script) {
-      script = document.createElement("script");
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement("script");
       script.id = scriptId;
       script.src = "https://accounts.google.com/gsi/client";
       script.async = true;
       script.defer = true;
-      script.onload = handleScriptLoad;
+      script.onload = initGoogle;
+      script.onerror = () => setError("Failed to load Google auth.");
       document.body.appendChild(script);
     } else {
-      // Script already present (e.g., after logout) – just init immediately
-      if (window.google) {
-        initGoogle();
-      } else {
-        script.addEventListener("load", handleScriptLoad);
-      }
+      initGoogle();
     }
-
-    return () => {
-      if (script) {
-        script.removeEventListener?.("load", handleScriptLoad);
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleCredentialResponse = async (response) => {
-  try {
-    setError("");
-
-    const res = await fetch(`${BACKEND_URL}/auth/google`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ credential: response.credential }),
-    });
-
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      const message =
-        data?.detail || data?.error || `Auth failed (status ${res.status})`;
-      console.error("Auth error response:", message);
-      setError(message);
-      return;
-    }
-
-    const data = await res.json();
-
-    if (typeof onAuthSuccess === "function") {
-      onAuthSuccess(data);
-    } else {
-      console.error("onAuthSuccess prop is missing or not a function");
-      setError("App is misconfigured (missing auth callback).");
-    }
-  } catch (err) {
-    console.error("Auth error:", err);
-    setError(err?.message || "Authentication failed");
-  }
-};
-
+  }, [onAuthSuccess]);
 
   return (
-    <div className="h-screen flex items-center justify-center bg-slate-50">
-      <div className="bg-white rounded-3xl shadow-lg px-10 py-8 max-w-md w-full border border-slate-100">
-        <h1 className="text-2xl font-semibold text-slate-900 text-center">
-          Aurora AI
-        </h1>
-        <p className="mt-2 text-sm text-slate-500 text-center">
-          Sign in with Google to access your chats.
-        </p>
+    <div className="flex-1 flex items-center justify-center bg-gradient-to-b from-slate-950 via-slate-900 to-indigo-900">
+      <div className="w-full max-w-md px-6">
+        {/* Card with NO white border, just a soft shadow */}
+        <div className="bg-slate-900/85 rounded-3xl shadow-[0_18px_60px_rgba(0,0,0,0.6)] px-8 py-10 backdrop-blur-sm text-white">
+          <div className="flex flex-col items-center gap-6">
+            {/* Icon */}
+            <div className="w-14 h-14 rounded-2xl bg-indigo-500 flex items-center justify-center text-white text-2xl font-semibold shadow-md shadow-indigo-900/70">
+              CF
+            </div>
 
-        <div className="mt-6 flex justify-center">
-          <div ref={buttonRef} />
+            {/* Title + subtitle */}
+            <div className="text-center space-y-2">
+            <h1
+              className="font-extrabold tracking-tight text-white"
+              style={{
+                fontSize: "2.75rem",      // ~text-4xl / 5xl
+                lineHeight: "1.1",
+                letterSpacing: "-0.03em",
+              }}
+            >
+              ContextFlow
+            </h1>
+            <p className="text-sm text-slate-200/85">
+              Sign in to chat with your AI agent
+            </p>
+          </div>
+
+            {/* Google button */}
+            <div ref={buttonRef} className="mt-4" />
+
+            {/* Error, if any */}
+            {error && (
+              <p className="mt-3 text-xs text-red-300 text-center">
+                Error: {error}
+              </p>
+            )}
+          </div>
         </div>
-
-        {error && (
-          <p className="mt-4 text-sm text-center text-red-600">
-            Error: {error}
-          </p>
-        )}
       </div>
     </div>
   );

@@ -1,10 +1,10 @@
+// src/App.jsx
 import { useState, useEffect, useCallback } from "react";
 import Navbar from "./components/Navbar";
 import NewChatSidebar from "./components/NewChatSidebar";
 import ChatWindow from "./components/ChatWindow";
 import AuthScreen from "./components/AuthScreen";
 
-// Helper: create a fresh conversation
 const makeDefaultConversation = () => ({
   conversationId: crypto.randomUUID(),
   messages: [
@@ -19,7 +19,7 @@ const makeDefaultConversation = () => ({
 const AUTH_STORAGE_KEY = "aurora_auth";
 
 export default function App() {
-  const [user, setUser] = useState(null);          // { name, email, picture }
+  const [user, setUser] = useState(null);
   const [authToken, setAuthToken] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
 
@@ -27,7 +27,7 @@ export default function App() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // ---------- AUTH: hydrate from localStorage on first load ----------
+  // ---------- AUTH: hydrate from localStorage ----------
   useEffect(() => {
     try {
       const raw = localStorage.getItem(AUTH_STORAGE_KEY);
@@ -56,7 +56,7 @@ export default function App() {
     [user?.email]
   );
 
-  // ---------- load chats + active conversation whenever user changes ----------
+  // ---------- load chats ----------
   useEffect(() => {
     if (!user?.email) {
       setChatList([]);
@@ -76,7 +76,6 @@ export default function App() {
         if (Array.isArray(parsed) && parsed.length > 0) {
           setChatList(parsed);
 
-          // restore last active conversation if exists
           let nextIndex = 0;
           if (activeKey) {
             const savedActiveId = localStorage.getItem(activeKey);
@@ -98,13 +97,12 @@ export default function App() {
       }
     }
 
-    // no saved chats → start with fresh one
     const fresh = [makeDefaultConversation()];
     setChatList(fresh);
     setActiveIndex(0);
   }, [user, getChatsKey, getActiveKey]);
 
-  // ---------- save chats when they change ----------
+  // ---------- save chats ----------
   useEffect(() => {
     if (!user?.email) return;
     const chatsKey = getChatsKey();
@@ -116,7 +114,7 @@ export default function App() {
     }
   }, [chatList, user, getChatsKey]);
 
-  // ---------- save active conversationId when activeIndex or chatList changes ----------
+  // ---------- save active conversation ----------
   useEffect(() => {
     if (!user?.email || chatList.length === 0) return;
     const activeKey = getActiveKey();
@@ -135,7 +133,6 @@ export default function App() {
 
   // ---------- auth handlers ----------
   const handleAuthSuccess = (payload) => {
-    // payload: { access_token, user: { name, email, picture } }
     setAuthToken(payload.access_token);
     setUser(payload.user);
 
@@ -159,12 +156,12 @@ export default function App() {
     setActiveIndex(0);
     setSidebarCollapsed(false);
     localStorage.removeItem(AUTH_STORAGE_KEY);
-    // per-user chats & activeId stay, so next login restores them
   };
 
-  // ---------- chat helpers ----------
   const activeConversation =
-    chatList.length > 0 ? chatList[Math.min(activeIndex, chatList.length - 1)] : null;
+    chatList.length > 0
+      ? chatList[Math.min(activeIndex, chatList.length - 1)]
+      : null;
 
   const activeConversationId = activeConversation?.conversationId;
   const messages = activeConversation?.messages || [];
@@ -219,10 +216,9 @@ export default function App() {
     });
   };
 
-  // ---------- WAIT until we’ve checked localStorage for auth ----------
   if (!authChecked) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-50 text-gray-500">
+      <div className="h-screen flex items-center justify-center bg-gradient-to-b from-[#050816] via-[#020617] to-[#181196] text-slate-200">
         Loading…
       </div>
     );
@@ -231,36 +227,36 @@ export default function App() {
   // ---------- unauthenticated view ----------
   if (!user || !authToken) {
     return (
-      <div className="h-screen flex flex-col bg-gray-50">
+      <div className="h-screen flex flex-col">
         <Navbar user={null} onLogout={handleLogout} />
-        <div className="flex-1 flex items-center justify-center">
-          <AuthScreen onAuthSuccess={handleAuthSuccess} />
-        </div>
+        <AuthScreen onAuthSuccess={handleAuthSuccess} />
       </div>
     );
   }
 
   // ---------- main app ----------
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-screen flex flex-col bg-gradient-to-b from-[#050816] via-[#020617] to-[#181196]">
       <Navbar user={user} onLogout={handleLogout} />
 
       <div className="flex flex-1 overflow-hidden pt-16 relative">
-        {/* Show Bar button when sidebar is collapsed */}
+        {/* Show-sidebar button when collapsed */}
         {sidebarCollapsed && (
           <button
             type="button"
             onClick={() => setSidebarCollapsed(false)}
-            className="absolute left-3 top-4 z-30 w-10 h-10 rounded-full bg-blue-600 shadow-md flex items-center justify-center hover:bg-blue-700 active:scale-[0.97] transition text-white"
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-slate-900/90 border border-slate-700/80 flex items-center justify-center hover:bg-slate-800 active:scale-[0.97] transition text-white shadow-lg"
             aria-label="Show sidebar"
           >
-            ☰
+            {/* three horizontal lines */}
+            <span className="text-2xl leading-none">≡</span>
           </button>
         )}
 
-        {/* Sidebar */}
+
+        {/* Sidebar (no white border line now) */}
         {!sidebarCollapsed && (
-          <div className="w-64 bg-gray-100 border-r border-gray-200 flex flex-col">
+          <div className="w-64 bg-slate-900/60 flex flex-col backdrop-blur">
             <NewChatSidebar
               onNewChat={handleNewChat}
               chatList={chatList}
@@ -268,7 +264,6 @@ export default function App() {
               onDeleteChat={handleDeleteChat}
               onTogglePin={handleTogglePin}
               onToggleSidebar={() => setSidebarCollapsed(true)}
-              sidebarCollapsed={sidebarCollapsed}
               activeConversationId={activeConversationId}
             />
           </div>
@@ -281,7 +276,7 @@ export default function App() {
               messages={messages}
               setMessages={setMessages}
               conversationId={activeConversationId}
-              authToken={authToken}
+              user={user}
             />
           </div>
         </div>

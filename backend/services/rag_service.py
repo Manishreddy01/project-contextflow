@@ -1,16 +1,22 @@
 # services/rag_service.py
 import sys
 import os
-from typing import List
+from typing import List, Optional
 
 # Ensure we can import from the backend/ folder (where chain/ lives)
-BACKEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+BACKEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if BACKEND_DIR not in sys.path:
     sys.path.append(BACKEND_DIR)
 
 from chain.generate_answer import generate_answer  # ← correct import
 
-def run_rag_pipeline(question: str, chat_history: List[dict], conversation_id: str):
+
+def run_rag_pipeline(
+    question: str,
+    chat_history: List[dict],
+    conversation_id: str,
+    user_id: Optional[str] = None,
+):
     """
     Returns a normalized dict consumed by routes/query.py:
     {
@@ -19,16 +25,14 @@ def run_rag_pipeline(question: str, chat_history: List[dict], conversation_id: s
       "type": "document" | "web",
       "confidence": float
     }
-    Note: chat_history & conversation_id are kept for future use but not required by generate_answer().
     """
     try:
-        # generate_answer accepts only (query: str, k: int = 3)
         result = generate_answer(
             query=question,
             chat_history=chat_history,
-            conversation_id=conversation_id
+            conversation_id=conversation_id,
+            user_id=user_id,
         )
-
 
         # Be defensive in case fields are missing
         answer = result.get("answer") or result.get("result") or ""
@@ -40,7 +44,7 @@ def run_rag_pipeline(question: str, chat_history: List[dict], conversation_id: s
             "answer": answer,
             "sources": sources,
             "type": resp_type,
-            "confidence": confidence
+            "confidence": confidence,
         }
 
     except Exception as e:
@@ -49,5 +53,5 @@ def run_rag_pipeline(question: str, chat_history: List[dict], conversation_id: s
             "answer": "An error occurred while generating a response.",
             "sources": [],
             "type": "document",
-            "confidence": 0.0
+            "confidence": 0.0,
         }

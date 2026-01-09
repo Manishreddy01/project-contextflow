@@ -1,6 +1,7 @@
 import sys
+import os
 from pathlib import Path
-from typing import Union
+from typing import Union, Optional
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
@@ -8,14 +9,15 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams
 from langchain_community.vectorstores import Qdrant
 from langchain_community.embeddings import HuggingFaceEmbeddings
+
 from rag.config import EMBEDDING_MODEL_NAME
 from embeddings.text_splitter import chunk_documents
 from loaders.load_documents import load_documents
 
+QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
 
 def get_qdrant_client():
-    return QdrantClient(url="http://localhost:6333")
-
+    return QdrantClient(url=QDRANT_URL)
 
 def create_collection(client, collection_name: str = "rag_collection"):
     if not client.collection_exists(collection_name):
@@ -31,19 +33,24 @@ def store_in_qdrant(chunks, collection_name: str = "rag_collection", metadata=No
     create_collection(client, collection_name)
     print(f"[Embeddings] Using model: {EMBEDDING_MODEL_NAME}")
 
-    # Add metadata
+    # Add metadata (now includes userId)
     if metadata:
+        user_id = metadata.get("userId")
+        conv_id = metadata.get("conversationId")
+        file_name = metadata.get("fileName")
+
         for i, chunk in enumerate(chunks):
             chunk.metadata = {
-                "conversationId": metadata.get("conversationId"),
-                "source": metadata.get("fileName"),
+                "userId": user_id,
+                "conversationId": conv_id,
+                "source": file_name,
                 "chunkIndex": i,
             }
 
     Qdrant.from_documents(
         documents=chunks,
         embedding=embedder,
-        url="http://localhost:6333",
+        url=QDRANT_URL, 
         collection_name=collection_name,
     )
 
@@ -52,12 +59,17 @@ def store_in_qdrant(chunks, collection_name: str = "rag_collection", metadata=No
     )
 
 
-def store_vectors(*, content: Union[str, bytes], file_name: str, conversation_id: str):
+def store_vectors(
+    *,
+    content: Union[str, bytes],
+    file_name: str,
+    conversation_id: str,
+    user_id: Optional[str] = None,
+):
     """
     Handles:
     - bytes -> uploaded file contents
     - str   -> raw text (pasted or extracted)
-    NO MORE Path(content) nonsense that treats long text as a file path.
     """
     try:
         # Case 1: uploaded file bytes
@@ -86,6 +98,7 @@ def store_vectors(*, content: Union[str, bytes], file_name: str, conversation_id
             metadata={
                 "fileName": file_name,
                 "conversationId": conversation_id,
+                "userId": user_id,
             },
         )
 

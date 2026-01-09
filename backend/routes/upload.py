@@ -4,7 +4,6 @@ import os
 import sys
 from pathlib import Path
 
-
 from rag.vectorstore.store_vectors import store_vectors
 
 # PDF + PPTX extraction
@@ -14,7 +13,6 @@ from pptx import Presentation
 router = APIRouter()
 print(">>> USING UPLOAD.PY AT PATH:", __file__)
 print("🔥🔥🔥 ACTIVE UPLOAD ROUTE:", __file__)
-
 
 
 def extract_txt(content: bytes) -> str:
@@ -45,7 +43,8 @@ def extract_pptx(file_path: str) -> str:
 async def upload_files(
     files: Optional[List[UploadFile]] = File(None),
     text: Optional[str] = Form(None),
-    conversationId: Optional[str] = Form(None)
+    conversationId: Optional[str] = Form(None),
+    userId: Optional[str] = Form(None),
 ):
     if not conversationId:
         raise HTTPException(status_code=400, detail="Missing conversationId")
@@ -55,11 +54,11 @@ async def upload_files(
 
     try:
         uploaded_names = []
+        print("UPLOAD conversationId:", conversationId, "userId:", userId)
 
         # Handle uploaded files
         if files:
             for file in files:
-                # Fix: sanitize filename (max 50 chars)
                 print("🔥 ENTERED FILE LOOP — REAL CODE RUNNING")
                 orig = file.filename
                 ext = Path(orig).suffix.lower()
@@ -70,7 +69,6 @@ async def upload_files(
                 else:
                     safe_name = orig
 
-                # Log for debugging
                 print(">>> SAFE FILENAME:", safe_name)
 
                 uploaded_names.append(safe_name)
@@ -93,21 +91,23 @@ async def upload_files(
                     store_vectors(
                         content=extracted,
                         file_name=safe_name,
-                        conversation_id=conversationId
+                        conversation_id=conversationId,
+                        user_id=userId,
                     )
 
-        # Handle pasted text
-       # if text:
-            #store_vectors(
-                #content=text,
-                #file_name="pasted_text.txt",
-               # conversation_id=conversationId
-           # )
-        print("UPLOAD conversationId:", conversationId)
+        # (pasted text disabled for now)
+        # if text:
+        #     store_vectors(
+        #         content=text,
+        #         file_name="pasted_text.txt",
+        #         conversation_id=conversationId,
+        #         user_id=userId,
+        #     )
+
         return {
             "success": True,
             "uploadedFiles": uploaded_names,
-            "textReceived": bool(text)
+            "textReceived": bool(text),
         }
 
     except Exception as e:

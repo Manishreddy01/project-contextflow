@@ -1,3 +1,4 @@
+// src/components/ChatWindow.jsx
 import { useState, useEffect } from "react";
 import ChatFeed from "./ChatFeed";
 import ChatInput from "./ChatInput";
@@ -5,7 +6,7 @@ import { v4 as uuidv4 } from "uuid";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
 
-export default function ChatWindow({ messages, setMessages, conversationId }) {
+export default function ChatWindow({ messages, setMessages, conversationId, user }) {
   const [files, setFiles] = useState([]);
   const [isThinking, setIsThinking] = useState(false);
 
@@ -32,14 +33,9 @@ export default function ChatWindow({ messages, setMessages, conversationId }) {
     }
   }, [conversationId, convId]);
 
-  // 🔹 Called by ChatInput when user picks files via "+"
-  const handleFilesSelected = (selectedFiles) => {
-    const arr = Array.from(selectedFiles || []);
-    setFiles(arr);
-  };
-
   const handleSend = async (inputText) => {
     if (!inputText.trim() && files.length === 0) return;
+    const userId = user?.email || user?.sub || user?.id || "anonymous";
 
     const activeConvId = convId;
 
@@ -72,12 +68,14 @@ export default function ChatWindow({ messages, setMessages, conversationId }) {
       question: inputText,
       conversationId: activeConvId,
       files,
+      userId,
     });
 
     // ---------- Upload docs if any ----------
     if (files.length > 0) {
       const formData = new FormData();
       formData.append("conversationId", activeConvId);
+      formData.append("userId", userId);
       files.forEach((file) => formData.append("files", file));
 
       try {
@@ -124,7 +122,7 @@ export default function ChatWindow({ messages, setMessages, conversationId }) {
       setMessages((prev) => prev.filter((m) => !m.isThinking));
     } finally {
       setIsThinking(false);
-      setFiles([]);
+      setFiles([]); // clear selected files after send
     }
   };
 
@@ -133,15 +131,16 @@ export default function ChatWindow({ messages, setMessages, conversationId }) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto space-y-5 px-4">
+      <div className="flex-1 overflow-y-auto space-y-5 px-4 pt-4 pb-2">
         <ChatFeed messages={messages} />
       </div>
 
-      <div className="mt-4 p-4 bg-white space-y-4 border-t border-gray-100">
+      <div className="mt-0 p-4 bg-slate-950/60 border-t border-white/10 space-y-3">
         <ChatInput
           onSend={handleSend}
-          onFilesSelected={handleFilesSelected}
-          isThinking={isThinking}
+          files={files}
+          setFiles={setFiles}
+          isLoading={isThinking}
         />
       </div>
     </div>
