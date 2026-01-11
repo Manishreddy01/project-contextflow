@@ -1,67 +1,129 @@
-# project-aurora
-Installation Guide
+# ContextFlow
 
-1. Clone the repository
-    git clone https://github.com/ManishReddy01/project-aurora.git
-    cd project-aurora
+ContextFlow is an AI-powered document assistant I built that runs locally and privately.  
 
-2. Setting Up the Backend (FastAPI + LangChain + Qdrant)
-    cd backend
-    /opt/homebrew/bin/python3.11 -m venv venv        
-    # Create virtual environment
-    # Windows:
-    venv\Scripts\activate
-    # macOS/Linux:
-    source venv/bin/activate
-    pip install --upgrade pip
-    pip install -r requirements.txt
-    Setup Environment Variables
-        Create a .env file in /backend directory:
-            OPENROUTER_API_KEY=your_openrouter_key
-            TAVILY_API_KEY=your_tavily_key (optional)
-            QDRANT_HOST=http://localhost:6333
-    Run the FastAPI Server
-    python -m uvicorn main:app --reload
+It lets you:
+- Upload your own documents (PDF, PPTX, TXT)
+- Ask natural language questions about them
+- Get grounded answers using Retrieval-Augmented Generation (RAG)
+- Fall back to web search or pure chat when there’s no relevant context
 
-3. Setting Up the Frontend (React + Tailwind)
-    (only if you're starting from scratch)
-        npm create vite@latest frontend --template react
-        # Install Tailwind CSS & its dependencies
-        npm install -D tailwindcss postcss autoprefixer
-        npx tailwindcss init -p 
-    cd frontend
-    npm install
-    npm run dev
-    Runs on: http://localhost:5173 
-    Connecting Frontend with Backend
-    // Example in frontend ChatInput.jsx
-    const backendUrl = "http://localhost:8000/query/";
-    You can also create a .env file in /frontend:
-        VITE_BACKEND_URL=http://localhost:8000
-        Then in code:
-        const url = `${import.meta.env.VITE_BACKEND_URL}/query`;
-4. Run Qdrant Locally (via Docker)
-    Ensure Docker is installed and running.
-    docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant 
-        This exposes:
+It’s designed as a **full-stack, production-style project**: auth, persistence, vector search, and a polished UI — something a recruiter or hiring manager can actually click through and use.
 
-        Qdrant UI: http://localhost:6334
+---
 
-        Qdrant API: http://localhost:6333
+## 🧱 Tech Stack
 
-🔁 Start Everything (Quick Recap)
+**Frontend**
 
-# In one terminal
-docker run -p 6333:6333 qdrant/qdrant
+- React (Vite)
+- Tailwind CSS
+- Framer Motion
 
-# In second terminal
+**Backend**
+
+- FastAPI (Python)
+- Uvicorn
+- LangChain (RAG + LLM orchestration)
+- OpenRouter (LLM API)
+- HuggingFace sentence transformer embeddings
+
+**Vector Store**
+
+- Qdrant (running in its own Docker container)
+
+**Other**
+
+- Tavily (web search fallback)
+- Google OAuth (sign-in)
+- Docker & Docker Compose
+
+---
+
+## 🐳 Run Locally with Docker
+
+### 1. Prerequisites
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop) installed and running
+- A copy of this repository on your machine
+
+```bash
+git clone https://github.com/<your-username>/<your-repo>.git
+cd <your-repo>
+Replace <your-username> and <your-repo> with your actual values.
+
+2. Backend Environment Variables
+Create a .env file inside the backend folder:
+
+bash
+Copy code
 cd backend
-source venv/bin/activate
-uvicorn main:app --reload
+touch .env
+Fill backend/.env with your own keys, for example:
 
-# In third terminal
-cd frontend
-npm run dev
+env
+Copy code
+# LLM / embeddings
+OPENROUTER_API_KEY=your_openrouter_key
+HUGGINGFACEHUB_API_TOKEN=your_huggingface_token
+OPENAI_API_KEY=your_openai_key_optional
 
+# Qdrant (Docker Compose will use the qdrant service name)
+QDRANT_URL=http://qdrant:6333
 
+# Web search
+TAVILY_API_KEY=your_tavily_key
 
+# Google auth + JWT
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+JWT_SECRET_KEY=some-secret-key
+JWT_ALGORITHM=HS256
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES=60
+
+# Frontend origin (for CORS)
+FRONTEND_ORIGIN=http://localhost:5173
+.env is already in .gitignore, so it will not be committed.
+
+Then go back to the project root:
+
+bash
+Copy code
+cd ..
+3. Start the Stack with Docker Compose
+From the project root (where docker-compose.yml lives), run:
+
+bash
+Copy code
+docker compose up --build
+This will start:
+
+Qdrant on port 6333
+
+Backend (FastAPI) on port 8000
+
+Frontend (React) on port 5173
+
+Once everything is up, open:
+
+text
+Copy code
+http://localhost:5173
+You can now:
+
+Sign in with Google
+
+Start a new chat
+
+Upload documents with the + button
+
+Ask questions like “summarize this file” or “what are the key points?”
+
+4. Stopping the Stack
+To stop all containers started by Docker Compose:
+
+bash
+Copy code
+docker compose down
+pgsql
+Copy code

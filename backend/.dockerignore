@@ -1,0 +1,34 @@
+# ---- Python junk ----
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+
+# Local virtualenvs
+venv/
+.venv/
+env/
+
+# Environment / secrets
+.env
+
+# Qdrant / vector / data storage (local only)
+qdrant_storage/
+storage/
+data/
+datasets/
+uploads/
+tmp/
+*.db
+*.sqlite3
+
+# Frontend / node stuff (if any accidentally here)
+node_modules/
+dist/
+build/
+
+# Git + misc
+.git
+.gitignore
+.DS_Store
