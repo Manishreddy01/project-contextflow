@@ -48,9 +48,9 @@ It’s designed as a **full-stack, production-style project**: auth, persistence
 - A copy of this repository on your machine
 
 ```bash
-git clone https://github.com/<your-username>/<your-repo>.git
-cd <your-repo>
-Replace <your-username> and <your-repo> with your actual values.
+git clone https://github.com/Manishreddy01/project-aurora.git
+cd project-aurora
+
 
 2. Backend Environment Variables
 Create a .env file inside the backend folder:
@@ -62,7 +62,7 @@ touch .env
 Fill backend/.env with your own keys, for example:
 
 env
-Copy code
+
 # LLM / embeddings
 OPENROUTER_API_KEY=your_openrouter_key
 HUGGINGFACEHUB_API_TOKEN=your_huggingface_token
@@ -87,14 +87,10 @@ FRONTEND_ORIGIN=http://localhost:5173
 
 Then go back to the project root:
 
-bash
-Copy code
 cd ..
 3. Start the Stack with Docker Compose
 From the project root (where docker-compose.yml lives), run:
 
-bash
-Copy code
 docker compose up --build
 This will start:
 
@@ -106,8 +102,6 @@ Frontend (React) on port 5173
 
 Once everything is up, open:
 
-text
-Copy code
 http://localhost:5173
 You can now:
 
@@ -122,8 +116,14 @@ Ask questions like “summarize this file” or “what are the key points?”
 4. Stopping the Stack
 To stop all containers started by Docker Compose:
 
-bash
-Copy code
 docker compose down
-pgsql
-Copy code
+
+
+### 💼 For recruiters / reviewers
+
+I built ContextFlow to practice:
+- Designing a realistic RAG pipeline (Qdrant + LangChain)
+- Full-stack integration (React + FastAPI + OAuth)
+- Containerization with Docker Compose
+
+If you’d like a quick walkthrough of the architecture or code, feel free to reach out at:shanuma8@asu.edu.
