@@ -154,7 +154,7 @@ I built ContextFlow to demonstrate real-world, production-style engineering skil
 - **DevOps / Containerization** — Multi-service Docker Compose setup with persistent storage
 - **Clean UX** — Framer Motion animations, Tailwind styling, and an intuitive chat interface
 
-📬 Want a walkthrough of the architecture or codebase? Reach out at **shanuma8@asu.edu**
+📬 Want a walkthrough of the architecture or codebase? Reach out at **mponnapa@asu.edu**
 
 ---
 
