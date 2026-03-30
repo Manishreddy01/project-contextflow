@@ -1,129 +1,165 @@
-# ContextFlow
+<div align="center">
 
-ContextFlow is an AI-powered document assistant I built that runs locally and privately.  
+# 🧠 ContextFlow
 
-It lets you:
-- Upload your own documents (PDF, PPTX, TXT)
-- Ask natural language questions about them
-- Get grounded answers using Retrieval-Augmented Generation (RAG)
-- Fall back to web search or pure chat when there’s no relevant context
+### AI-Powered Document Assistant — Private, Local, and Production-Ready
 
-It’s designed as a **full-stack, production-style project**: auth, persistence, vector search, and a polished UI — something a recruiter or hiring manager can actually click through and use.
+[![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![React](https://img.shields.io/badge/React-Vite-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.110-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://docker.com)
+[![LangChain](https://img.shields.io/badge/LangChain-RAG-1C3C3C?style=for-the-badge&logo=chainlink&logoColor=white)](https://langchain.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
+
+**Upload your documents. Ask anything. Get grounded, private answers — no data leaves your machine.**
+
+[🚀 Run Locally](#-run-locally-with-docker) · [🧱 Tech Stack](#-tech-stack) · [✨ Features](#-features) · [👔 For Recruiters](#-for-recruiters--reviewers)
+
+</div>
+
+---
+
+## ✨ Features
+
+| Feature | Description |
+|---|---|
+| 📄 **Document Upload** | Supports PDF, PPTX, and TXT files |
+| 💬 **Natural Language Q&A** | Ask questions about your documents in plain English |
+| 🔍 **RAG Pipeline** | Retrieval-Augmented Generation via Qdrant + LangChain |
+| 🌐 **Web Search Fallback** | Powered by Tavily when no local context is found |
+| 🔐 **Google OAuth** | Secure sign-in with JWT-based session management |
+| 🐳 **One-Command Setup** | Fully containerized with Docker Compose |
+| 🎨 **Polished UI** | React + Tailwind + Framer Motion for smooth interactions |
 
 ---
 
 ## 🧱 Tech Stack
 
-**Frontend**
+### Frontend
+- **React** (Vite) — fast, modern UI tooling
+- **Tailwind CSS** — utility-first styling
+- **Framer Motion** — smooth animations
 
-- React (Vite)
-- Tailwind CSS
-- Framer Motion
+### Backend
+- **FastAPI** (Python) — high-performance async API
+- **LangChain** — RAG orchestration and LLM chaining
+- **OpenRouter** — unified LLM API gateway
+- **HuggingFace** — sentence transformer embeddings
 
-**Backend**
-
-- FastAPI (Python)
-- Uvicorn
-- LangChain (RAG + LLM orchestration)
-- OpenRouter (LLM API)
-- HuggingFace sentence transformer embeddings
-
-**Vector Store**
-
-- Qdrant (running in its own Docker container)
-
-**Other**
-
-- Tavily (web search fallback)
-- Google OAuth (sign-in)
-- Docker & Docker Compose
+### Infrastructure
+- **Qdrant** — vector database (runs in its own container)
+- **Docker & Docker Compose** — one-command local deployment
+- **Google OAuth** — authentication
+- **Tavily** — web search fallback
 
 ---
 
-## 🐳 Run Locally with Docker
+## 🚀 Run Locally with Docker
 
-### 1. Prerequisites
+### Prerequisites
 
-- [Docker Desktop](https://www.docker.com/products/docker-desktop) installed and running
-- A copy of this repository on your machine
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running
+- API keys for: OpenRouter, HuggingFace, Tavily, and Google OAuth
+
+### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/Manishreddy01/project-aurora.git
-cd project-aurora
+git clone https://github.com/Manishreddy01/project-contextflow.git
+cd project-contextflow
+```
 
+### 2. Configure Backend Environment Variables
 
-2. Backend Environment Variables
-Create a .env file inside the backend folder:
-
-bash
-Copy code
+```bash
 cd backend
 touch .env
-Fill backend/.env with your own keys, for example:
+```
 
-env
+Populate `backend/.env` with your keys:
 
-# LLM / embeddings
+```env
+# LLM & Embeddings
 OPENROUTER_API_KEY=your_openrouter_key
 HUGGINGFACEHUB_API_TOKEN=your_huggingface_token
 OPENAI_API_KEY=your_openai_key_optional
 
-# Qdrant (Docker Compose will use the qdrant service name)
+# Qdrant (uses Docker Compose service name)
 QDRANT_URL=http://qdrant:6333
 
-# Web search
+# Web Search
 TAVILY_API_KEY=your_tavily_key
 
-# Google auth + JWT
+# Google OAuth & JWT
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
 JWT_SECRET_KEY=some-secret-key
 JWT_ALGORITHM=HS256
 JWT_ACCESS_TOKEN_EXPIRE_MINUTES=60
 
-# Frontend origin (for CORS)
+# CORS
 FRONTEND_ORIGIN=http://localhost:5173
-.env is already in .gitignore, so it will not be committed.
+```
 
-Then go back to the project root:
+> `.env` is in `.gitignore` and will never be committed.
 
+### 3. Start the Stack
+
+```bash
 cd ..
-3. Start the Stack with Docker Compose
-From the project root (where docker-compose.yml lives), run:
-
 docker compose up --build
-This will start:
+```
 
-Qdrant on port 6333
+This spins up three services:
 
-Backend (FastAPI) on port 8000
+| Service | Port |
+|---|---|
+| **Qdrant** (vector DB) | `6333` |
+| **Backend** (FastAPI) | `8000` |
+| **Frontend** (React) | `5173` |
 
-Frontend (React) on port 5173
+Open **http://localhost:5173** in your browser. You can now:
 
-Once everything is up, open:
+- 🔑 Sign in with Google
+- 💬 Start a new chat
+- 📎 Upload documents via the `+` button
+- 🤔 Ask questions like *"Summarize this file"* or *"What are the key points?"*
 
-http://localhost:5173
-You can now:
+### 4. Stop the Stack
 
-Sign in with Google
-
-Start a new chat
-
-Upload documents with the + button
-
-Ask questions like “summarize this file” or “what are the key points?”
-
-4. Stopping the Stack
-To stop all containers started by Docker Compose:
-
+```bash
 docker compose down
+```
 
+---
 
-### 💼 For recruiters / reviewers
+## 🗂️ Project Structure
 
-I built ContextFlow to practice:
-- Designing a realistic RAG pipeline (Qdrant + LangChain)
-- Full-stack integration (React + FastAPI + OAuth)
-- Containerization with Docker Compose
+```
+project-contextflow/
+├── backend/           # FastAPI app — RAG pipeline, auth, vector search
+├── frontend/          # React + Vite app — chat UI, file upload
+├── qdrant_storage/    # Persisted vector data
+├── docker-compose.yml # Orchestrates all three services
+└── .gitignore
+```
 
-If you’d like a quick walkthrough of the architecture or code, feel free to reach out at:shanuma8@asu.edu.
+---
+
+## 👔 For Recruiters & Reviewers
+
+I built ContextFlow to demonstrate real-world, production-style engineering skills:
+
+- **RAG Pipeline Design** — Qdrant vector store + LangChain + sentence transformer embeddings
+- **Full-Stack Integration** — React frontend talking to a FastAPI backend with Google OAuth
+- **DevOps / Containerization** — Multi-service Docker Compose setup with persistent storage
+- **Clean UX** — Framer Motion animations, Tailwind styling, and an intuitive chat interface
+
+📬 Want a walkthrough of the architecture or codebase? Reach out at **shanuma8@asu.edu**
+
+---
+
+<div align="center">
+
+Built with ❤️ by [Manishreddy01](https://github.com/Manishreddy01) · [saisravyaa](https://github.com/saisravyaa) · [kartheekpanyam](https://github.com/kartheekpanyam)
+
+</div>
